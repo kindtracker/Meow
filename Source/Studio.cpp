@@ -8,6 +8,7 @@ int MyaStudio::StartSDL() {
 
   SDL_CreateWindowAndRenderer("Mya", 640, 480, SDL_WINDOW_OPENGL, &Window,
                               &this->Renderer);
+  SDL_SetRenderVSync(this->Renderer, 1);
 
   return MyaOk;
 }
