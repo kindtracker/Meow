@@ -1,4 +1,5 @@
 #pragma once
+#include "Clay.h"
 #include <SDL3/SDL.h>
 
 using namespace std;
@@ -9,8 +10,9 @@ class MyaStudio {
 public:
   int StartSDL();
   int StartStudio();
-  int Frame();
   int Close();
+  int Frame();
+  Clay_RenderCommandArray CreateLayout();
 
   SDL_Window *Window;
   SDL_Renderer *Renderer;

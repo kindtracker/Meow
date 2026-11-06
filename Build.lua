@@ -4,16 +4,15 @@ local Build = "Build"
 local CC = os.getenv("CC") or "gcc"
 local CXX = os.getenv("CXX") or "g++"
 
-local CFlags = "-Wall -Wextra"
-local CXXFlags = "-Wall -Wextra -O2"
+local Sanitizers = ""
+local CFlags = "-Wall -Wextra" .. Sanitizers
+local CXXFlags = "-Wall -Wextra -O2" .. Sanitizers
 local ASFlags = ""
-local LdFlags = "-lSDL3"
+local LdFlags = "-lSDL3 -lSDL3_image -lSDL3_ttf" .. Sanitizers
 local Libs = ""
 
 local Sources = {
 	"Source",
-	"Source/Include",
-	"Vendors",
 }
 
 local Includes = {
