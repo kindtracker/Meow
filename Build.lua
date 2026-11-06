@@ -7,11 +7,12 @@ local CXX = os.getenv("CXX") or "g++"
 local CFlags = "-Wall -Wextra"
 local CXXFlags = "-Wall -Wextra -O2"
 local ASFlags = ""
-local LdFlags = ""
+local LdFlags = "-lSDL3"
 local Libs = ""
 
 local Sources = {
 	"Source",
+	"Vendors",
 }
 
 local Includes = {
