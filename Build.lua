@@ -12,6 +12,7 @@ local Libs = ""
 
 local Sources = {
 	"Source",
+	"Source/Include",
 	"Vendors",
 }
 
@@ -172,7 +173,7 @@ local function ReadDependencies(Path)
 
 	Content = Content:gsub("\\\r?\n", " ")
 
-	local DependencyText = Content:match("^[^:]+:%s*(.*)")
+	local DependencyText = Content:match("^[^:]+:%s*([^\n]*)")
 
 	if DependencyText then
 		for Dependency in DependencyText:gmatch("%S+") do
