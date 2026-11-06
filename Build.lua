@@ -72,7 +72,15 @@ local function Exists(Path)
 end
 
 local function Mtime(Path)
-	return tonumber(Capture("stat -c %Y " .. Quote(Path) .. " 2>/dev/null"):match("%d+"))
+	local Result = io.popen("stat -c %Y -- " .. Quote(Path) .. " 2>/dev/null")
+	if not Result then
+		return nil
+	end
+
+	local Output = Result:read("*a")
+	Result:close()
+
+	return tonumber(Output:match("%d+"))
 end
 
 local function IsNewer(Input, Output)
