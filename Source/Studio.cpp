@@ -40,7 +40,7 @@ int MyaStudio::Frame() {
 
   SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
   SDL_RenderClear(Renderer);
-
+  this->DrawUI();
   SDL_RenderPresent(Renderer);
 
   return MyaOk;

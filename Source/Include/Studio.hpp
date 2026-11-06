@@ -11,6 +11,7 @@ public:
   int StartStudio();
   int Close();
   int Frame();
+  void DrawUI();
 
   SDL_Window *Window;
   SDL_Renderer *Renderer;
