@@ -6,7 +6,8 @@
 int MyaStudio::StartSDL() {
   SDL_Init(SDL_INIT_VIDEO);
 
-  SDL_CreateWindowAndRenderer("Mya", 640, 480, SDL_WINDOW_OPENGL, &Window,
+  SDL_CreateWindowAndRenderer("Mya", 640, 480,
+                              SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE, &Window,
                               &this->Renderer);
   SDL_SetRenderVSync(this->Renderer, 1);
 

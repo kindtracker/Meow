@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <cmath>
 
 #include "Include/Studio.hpp"
 
@@ -56,14 +57,117 @@ void Text(SDL_Renderer *Renderer, float X, float Y, const char *String,
   SDL_RenderDebugText(Renderer, X, Y, String);
 }
 
+void FillRounded(SDL_Renderer *Renderer, float X, float Y, float W, float H,
+                 float Radius, Color C) {
+  Radius = SDL_clamp(Radius, 0.0f, SDL_min(W, H) / 2.0f);
+
+  if (Radius <= 0.0f) {
+    Fill(Renderer, X, Y, W, H, C);
+    return;
+  }
+
+  constexpr int Segments = 8;
+  constexpr float PI = 3.14159265358979323846f;
+
+  SDL_Vertex Vertices[4 * (Segments + 2)];
+
+  int Count = 0;
+
+  auto AddVertex = [&](float VX, float VY) {
+    Vertices[Count++] = {
+        {VX, VY},
+        {static_cast<float>(C.R) / 255.0f, static_cast<float>(C.G) / 255.0f,
+         static_cast<float>(C.B) / 255.0f, static_cast<float>(C.A) / 255.0f},
+        {0.0f, 0.0f}};
+  };
+
+  const float CentersX[] = {X + W - Radius, X + W - Radius, X + Radius,
+                            X + Radius};
+
+  const float CentersY[] = {Y + Radius, Y + H - Radius, Y + H - Radius,
+                            Y + Radius};
+
+  const float StartAngles[] = {-PI / 2.0f, 0.0f, PI / 2.0f, PI};
+
+  for (int Corner = 0; Corner < 4; Corner++) {
+    AddVertex(CentersX[Corner], CentersY[Corner]);
+
+    for (int i = 0; i <= Segments; i++) {
+      float Angle = StartAngles[Corner] + (PI / 2.0f) * i / Segments;
+
+      AddVertex(CentersX[Corner] + cosf(Angle) * Radius,
+                CentersY[Corner] + sinf(Angle) * Radius);
+    }
+  }
+
+  int Indices[4 * Segments * 3];
+  int IndexCount = 0;
+
+  for (int Corner = 0; Corner < 4; Corner++) {
+    int Center = Corner * (Segments + 2);
+
+    for (int i = 0; i < Segments; i++) {
+      int A = Center;
+      int B = Center + 1 + i;
+      int D = Center + 1 + i + 1;
+
+      Indices[IndexCount++] = A;
+      Indices[IndexCount++] = B;
+      Indices[IndexCount++] = D;
+    }
+  }
+
+  SDL_RenderGeometry(Renderer, nullptr, Vertices, Count, Indices, IndexCount);
+}
+
+void DrawRounded(SDL_Renderer *Renderer, float X, float Y, float W, float H,
+                 float Radius, Color C) {
+  constexpr int Segments = 12;
+  constexpr float PI = 3.14159265358979323846f;
+
+  Radius = SDL_clamp(Radius, 0.0f, SDL_min(W, H) / 2.0f);
+
+  if (Radius <= 0.0f) {
+    Border(Renderer, X, Y, W, H, C);
+    return;
+  }
+
+  SDL_FPoint Points[4 * (Segments + 1) + 1];
+
+  const float CentersX[] = {X + W - Radius, X + W - Radius, X + Radius,
+                            X + Radius};
+
+  const float CentersY[] = {Y + Radius, Y + H - Radius, Y + H - Radius,
+                            Y + Radius};
+
+  const float StartAngles[] = {-PI / 2.0f, 0.0f, PI / 2.0f, PI};
+
+  int Count = 0;
+
+  for (int Corner = 0; Corner < 4; Corner++) {
+    for (int i = 0; i <= Segments; i++) {
+      float Angle = StartAngles[Corner] + (PI / 2.0f) * i / Segments;
+
+      Points[Count++] = {CentersX[Corner] + cosf(Angle) * Radius,
+                         CentersY[Corner] + sinf(Angle) * Radius};
+    }
+  }
+
+  Points[Count++] = Points[0];
+
+  SetColor(Renderer, C);
+
+  SDL_RenderLines(Renderer, Points, Count);
+}
+
 void DrawPanel(SDL_Renderer *Renderer, float X, float Y, float W, float H) {
-  Fill(Renderer, X, Y, W, H, Surface0);
-  Border(Renderer, X, Y, W, H, Overlay0);
+  FillRounded(Renderer, X, Y, W, H, 6.0f, Surface0);
+  DrawRounded(Renderer, X, Y, W, H, 6.0f, Overlay0);
 }
 
 void DrawPanelTitle(SDL_Renderer *Renderer, float X, float Y, float W,
                     const char *Title) {
-  Fill(Renderer, X, Y, W, 28, Mantle);
+  FillRounded(Renderer, X, Y, W, 28, 6.0f, Mantle);
 
   Line(Renderer, X, Y + 27, X + W, Y + 27, Surface1);
 
@@ -75,7 +179,7 @@ void DrawSearchBar(SDL_Renderer *Renderer, float X, float Y, float W,
                    const char *Placeholder) {
   Fill(Renderer, X + 8, Y + 8, W - 16, 28, Surface1);
 
-  Border(Renderer, X + 8, Y + 8, W - 16, 28, Overlay0);
+  DrawRounded(Renderer, X + 8, Y + 8, W - 16, 28, 6.0f, Overlay0);
 
   Text(Renderer, X + 17, Y + 18, Placeholder, Subtext0);
 }
@@ -90,8 +194,8 @@ void DrawToolbarButton(SDL_Renderer *Renderer, float X, float Y,
 }
 
 void DrawToolbar(SDL_Renderer *Renderer, int Width) {
-  Fill(Renderer, 0, 0, Width, 32, Surface0);
-  Border(Renderer, 0, 0, Width, 32, Overlay0);
+  FillRounded(Renderer, 0, 0, Width, 32, 6.0f, Surface0);
+  DrawRounded(Renderer, 0, 0, Width, 32, 6.0f, Overlay0);
 
   Text(Renderer, 7, 11, "|||", Overlay1);
 
@@ -162,7 +266,7 @@ void DrawProject(SDL_Renderer *Renderer, float X, float Y, float W, float H) {
 
   DrawPanelTitle(Renderer, X, Y, W, "Project Name");
 
-  Fill(Renderer, X + 1, Y + 29, W - 2, H - 30, Mantle);
+  FillRounded(Renderer, X + 1, Y + 29, W - 2, H - 30, 6.0f, Mantle);
 
   Text(Renderer, X + W / 2 - 40, Y + H / 2, "Viewport", Overlay1);
 }
