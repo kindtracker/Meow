@@ -1,36 +1,64 @@
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <cmath>
 
 #include "Include/Studio.hpp"
 
 namespace StudioUI {
 
-struct Color {
-  Uint8 R, G, B, A;
-};
+constexpr MyaStudio::Color Mantle = {24, 25, 38, 255};
+constexpr MyaStudio::Color Base = {30, 32, 48, 255};
+constexpr MyaStudio::Color Surface0 = {54, 58, 79, 255};
+constexpr MyaStudio::Color Surface1 = {73, 77, 100, 255};
+constexpr MyaStudio::Color Overlay0 = {91, 96, 120, 255};
+constexpr MyaStudio::Color Overlay1 = {110, 115, 141, 255};
 
-constexpr Color Mantle = {24, 25, 38, 255};
-constexpr Color Base = {30, 32, 48, 255};
-constexpr Color Surface0 = {54, 58, 79, 255};
-constexpr Color Surface1 = {73, 77, 100, 255};
-constexpr Color Overlay0 = {91, 96, 120, 255};
-constexpr Color Overlay1 = {110, 115, 141, 255};
+constexpr MyaStudio::Color TextColor = {202, 211, 245, 255};
+constexpr MyaStudio::Color Subtext0 = {165, 173, 203, 255};
+constexpr MyaStudio::Color Subtext1 = {184, 192, 224, 255};
 
-constexpr Color TextColor = {202, 211, 245, 255};
-constexpr Color Subtext0 = {165, 173, 203, 255};
-constexpr Color Subtext1 = {184, 192, 224, 255};
+constexpr MyaStudio::Color Blue = {138, 173, 244, 255};
+constexpr MyaStudio::Color Lavender = {183, 189, 248, 255};
+constexpr MyaStudio::Color Green = {166, 218, 149, 255};
+constexpr MyaStudio::Color Yellow = {238, 212, 159, 255};
+constexpr MyaStudio::Color Red = {237, 135, 150, 255};
 
-constexpr Color Blue = {138, 173, 244, 255};
-constexpr Color Lavender = {183, 189, 248, 255};
-constexpr Color Green = {166, 218, 149, 255};
-constexpr Color Yellow = {238, 212, 159, 255};
-constexpr Color Red = {237, 135, 150, 255};
+TTF_Font *ActiveFont = nullptr;
 
-void SetColor(SDL_Renderer *Renderer, Color C) {
+void SetColor(SDL_Renderer *Renderer, MyaStudio::Color C) {
   SDL_SetRenderDrawColor(Renderer, C.R, C.G, C.B, C.A);
 }
 
-void Fill(SDL_Renderer *Renderer, float X, float Y, float W, float H, Color C) {
+void Text(SDL_Renderer *Renderer, float X, float Y, const char *String,
+          MyaStudio::Color C) {
+  if (!ActiveFont || !String) {
+    return;
+  }
+
+  SDL_Color SDLTextColor = {C.R, C.G, C.B, C.A};
+  SDL_Surface *Surface =
+      TTF_RenderText_Blended(ActiveFont, String, 0, SDLTextColor);
+
+  if (!Surface) {
+    SDL_Log("TTF_RenderText_Blended failed: %s", SDL_GetError());
+    return;
+  }
+
+  SDL_Texture *Texture = SDL_CreateTextureFromSurface(Renderer, Surface);
+  if (Texture) {
+    SDL_FRect Destination = {X, Y, static_cast<float>(Surface->w),
+                             static_cast<float>(Surface->h)};
+    SDL_RenderTexture(Renderer, Texture, nullptr, &Destination);
+    SDL_DestroyTexture(Texture);
+  } else {
+    SDL_Log("SDL_CreateTextureFromSurface failed: %s", SDL_GetError());
+  }
+
+  SDL_DestroySurface(Surface);
+}
+
+void Fill(SDL_Renderer *Renderer, float X, float Y, float W, float H,
+          MyaStudio::Color C) {
   SDL_FRect Rect = {X, Y, W, H};
 
   SetColor(Renderer, C);
@@ -38,7 +66,7 @@ void Fill(SDL_Renderer *Renderer, float X, float Y, float W, float H, Color C) {
 }
 
 void Border(SDL_Renderer *Renderer, float X, float Y, float W, float H,
-            Color C) {
+            MyaStudio::Color C) {
   SDL_FRect Rect = {X, Y, W, H};
 
   SetColor(Renderer, C);
@@ -46,19 +74,13 @@ void Border(SDL_Renderer *Renderer, float X, float Y, float W, float H,
 }
 
 void Line(SDL_Renderer *Renderer, float X1, float Y1, float X2, float Y2,
-          Color C) {
+          MyaStudio::Color C) {
   SetColor(Renderer, C);
   SDL_RenderLine(Renderer, X1, Y1, X2, Y2);
 }
 
-void Text(SDL_Renderer *Renderer, float X, float Y, const char *String,
-          Color C) {
-  SetColor(Renderer, C);
-  SDL_RenderDebugText(Renderer, X, Y, String);
-}
-
 void FillRounded(SDL_Renderer *Renderer, float X, float Y, float W, float H,
-                 float Radius, Color C) {
+                 float Radius, MyaStudio::Color C) {
   Radius = SDL_clamp(Radius, 0.0f, SDL_min(W, H) / 2.0f);
 
   if (Radius <= 0.0f) {
@@ -121,7 +143,7 @@ void FillRounded(SDL_Renderer *Renderer, float X, float Y, float W, float H,
 }
 
 void DrawRounded(SDL_Renderer *Renderer, float X, float Y, float W, float H,
-                 float Radius, Color C) {
+                 float Radius, MyaStudio::Color C) {
   constexpr int Segments = 12;
   constexpr float PI = 3.14159265358979323846f;
 
@@ -307,6 +329,8 @@ void DrawConsole(SDL_Renderer *Renderer, float X, float Y, float W, float H) {
 } // namespace StudioUI
 
 void MyaStudio::DrawUI() {
+  StudioUI::ActiveFont = this->Font;
+
   int Width, Height;
 
   SDL_GetRenderOutputSize(this->Renderer, &Width, &Height);
@@ -316,38 +340,24 @@ void MyaStudio::DrawUI() {
   constexpr float ToolbarHeight = 32;
   constexpr float Gap = 4;
   constexpr float ConsoleHeight = 275;
-
   const float LeftWidth = Width * 0.20f;
-
   const float ContentY = ToolbarHeight + Gap;
-
   const float LeftHeight = Height - ToolbarHeight - Gap * 2;
-
   const float ExplorerHeight = (LeftHeight - Gap) / 2.0f;
-
   const float PropertiesY = ContentY + ExplorerHeight + Gap;
-
   const float PropertiesHeight = LeftHeight - ExplorerHeight - Gap;
-
   const float RightX = LeftWidth + Gap;
-
   const float RightWidth = Width - RightX - Gap;
-
   const float ProjectHeight = Height - ConsoleHeight - ToolbarHeight - Gap * 3;
-
   const float ConsoleY = Height - ConsoleHeight;
 
   StudioUI::DrawToolbar(this->Renderer, Width);
-
   StudioUI::DrawExplorer(this->Renderer, 0, ContentY, LeftWidth,
                          ExplorerHeight);
-
   StudioUI::DrawProperties(this->Renderer, 0, PropertiesY, LeftWidth,
                            PropertiesHeight);
-
   StudioUI::DrawProject(this->Renderer, RightX, ContentY, RightWidth,
                         ProjectHeight);
-
   StudioUI::DrawConsole(this->Renderer, RightX, ConsoleY, RightWidth,
                         ConsoleHeight);
 }

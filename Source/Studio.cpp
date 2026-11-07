@@ -1,10 +1,12 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_init.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 #include "Include/Studio.hpp"
 
 int MyaStudio::StartSDL() {
   SDL_Init(SDL_INIT_VIDEO);
+  TTF_Init();
 
   SDL_CreateWindowAndRenderer("Mya", 640, 480,
                               SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE, &Window,
@@ -20,11 +22,16 @@ int MyaStudio::StartStudio() {
     return Result;
   }
 
+  this->Font = TTF_OpenFont("Assets/NotoSans.ttf", 14.0f);
+
   this->Running = true;
   return MyaOk;
 }
 
 int MyaStudio::Close() {
+  TTF_CloseFont(this->Font);
+  TTF_Quit();
+
   SDL_DestroyRenderer(this->Renderer);
   SDL_DestroyWindow(this->Window);
   SDL_Quit();
